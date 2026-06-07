@@ -22,10 +22,18 @@ async function run() {
     await client.connect();
     const db = client.db("hireloopDB");
     const jobCollection=db.collection('jobs')
-    const companyCollection=db.collection('companys')
+    const userCollection=db.collection("user")
+    app.get("/users",async(req,res)=>{
+      const result=await userCollection.find().toArray()
+      res.send(result)
+    })
     app.post("/new/jobs",async(req,res)=>{
         const data=req.body;
-        const result=await jobCollection.insertOne(data)
+        const newJob={
+          ...data,
+          createdAt: new Date()
+        }
+        const result=await jobCollection.insertOne(newJob)
         res.send(result)
     })
     app.get("/api/jobs",async(req,res)=>{
@@ -42,7 +50,11 @@ async function run() {
     // company related api
     app.post("/new/company",async(req,res)=>{
       const data=req.body;
-      const result=await companyCollection.insertOne(data)
+      const newCompany={
+        ...data,
+        createdAt: new Date()
+      }
+      const result=await companyCollection.insertOne(newCompany)
       res.send(result)
     })
     app.get("/api/my/companies",async(req,res)=>{
