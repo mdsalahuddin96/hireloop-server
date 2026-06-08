@@ -23,7 +23,15 @@ async function run() {
     const db = client.db("hireloopDB");
     const jobCollection = db.collection("jobs");
     const companyCollection = db.collection("companys");
-    
+    const user=db.collection("user")
+    app.get("/recruiter",async(req,res)=>{
+      const result=await user.find().toArray()
+      res.send(result)
+    })
+    app.get("/companies",async(req,res)=>{
+      const result=await companyCollection.find().toArray()
+      res.send(result)
+    })
     // main page api
     app.get("/api/alljobs",async(req,res)=>{
       const jobs=await jobCollection.find().toArray()
