@@ -23,20 +23,34 @@ async function run() {
     const db = client.db("hireloopDB");
     const jobCollection = db.collection("jobs");
     const companyCollection = db.collection("companys");
-    const user=db.collection("user")
-    app.get("/recruiter",async(req,res)=>{
-      const result=await user.find().toArray()
-      res.send(result)
-    })
-    app.get("/companies",async(req,res)=>{
-      const result=await companyCollection.find().toArray()
-      res.send(result)
-    })
+    const user = db.collection("user");
+    app.get("/recruiter", async (req, res) => {
+      const result = await user.find().toArray();
+      res.send(result);
+    });
+    app.get("/companies", async (req, res) => {
+      const result = await companyCollection.find().toArray();
+      res.send(result);
+    });
     // main page api
-    app.get("/api/alljobs",async(req,res)=>{
-      const jobs=await jobCollection.find().toArray()
-      res.send(jobs)
-    })
+    // app.get("/api/alljobs", async (req, res) => {
+    //   const jobs = await jobCollection.find().toArray();
+    //   res.send(jobs);
+    // });
+
+    app.get("/api/jobs", async (req, res) => {
+      const { search, category, jobType, country } = req.query;
+      let query = {};
+
+      if (search) {
+        query.title = { $regex: search, $options: "i" }; // Case-insensitive search
+      }
+      if (category) query.category = category;
+      if (jobType) query.jobType = jobType;
+      if (country) query.country = { $regex: country, $options: "i" };
+      const jobs = await jobCollection.find(query).toArray();
+      res.json(jobs);
+    });
     // company related api
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
