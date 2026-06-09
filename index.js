@@ -33,11 +33,6 @@ async function run() {
       res.send(result);
     });
     // main page api
-    // app.get("/api/alljobs", async (req, res) => {
-    //   const jobs = await jobCollection.find().toArray();
-    //   res.send(jobs);
-    // });
-
     app.get("/api/jobs", async (req, res) => {
       const { search, category, jobType, country } = req.query;
       let query = {};
@@ -51,6 +46,13 @@ async function run() {
       const jobs = await jobCollection.find(query).toArray();
       res.json(jobs);
     });
+
+    app.get("/jobs/:id",async(req,res)=>{
+      const {id}=req.params;
+      const query={_id:new ObjectId(id)}
+      const result=await jobCollection.findOne(query)
+      res.send(result)
+    })
     // company related api
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
