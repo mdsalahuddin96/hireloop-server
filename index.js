@@ -24,6 +24,8 @@ async function run() {
     const jobCollection = db.collection("jobs");
     const companyCollection = db.collection("companys");
     const applicationCollection=db.collection("applications")
+    const planCollection=db.collection("plans")
+    const subscriptionColl=db.collection("subscription")
     const user = db.collection("user");
     app.get("/recruiter", async (req, res) => {
       const result = await user.find().toArray();
@@ -68,6 +70,33 @@ async function run() {
       const result=await applicationCollection.find({applicantId}).toArray()
       res.send(result)
     })
+
+    // plans
+    app.get("/api/plan",async(req,res)=>{
+      const query={}
+      if(req.query.planId){
+        query.planId=req.query.planId
+      }
+      const plan=await planCollection.findOne(query)
+      res.send(plan)
+    })
+    app.post('/new/subscription', async(req,res)=>{
+      const data=req.body;
+      // console.log(data)
+      const subscriptionData={
+        ...data,
+        createdAt:new Date()
+      }
+      const result=await subscriptionColl.insertOne(subscriptionData);
+
+      const filter={
+        email:data.email
+      }
+      const updateUser=await user.updateOne(filter,{
+        $set:{plan:data.planId}
+      })
+      res.send(updateUser)
+    })
     // company related api
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
@@ -104,7 +133,7 @@ async function run() {
         query.recruiterId = req.query.recruiterId;
       }
       const result = await companyCollection.findOne(query);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
     await client.db("admin").command({ ping: 1 });
