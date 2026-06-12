@@ -23,9 +23,9 @@ async function run() {
     const db = client.db("hireloopDB");
     const jobCollection = db.collection("jobs");
     const companyCollection = db.collection("companys");
-    const applicationCollection=db.collection("applications")
-    const planCollection=db.collection("plans")
-    const subscriptionColl=db.collection("subscription")
+    const applicationCollection = db.collection("applications");
+    const planCollection = db.collection("plans");
+    const subscriptionColl = db.collection("subscription");
     const user = db.collection("user");
     app.get("/recruiter", async (req, res) => {
       const result = await user.find().toArray();
@@ -50,53 +50,55 @@ async function run() {
       res.json(jobs);
     });
 
-    app.get("/jobs/:id",async(req,res)=>{
-      const {id}=req.params;
-      const query={_id:new ObjectId(id)}
-      const result=await jobCollection.findOne(query)
-      res.send(result)
-    })
-    app.post("/api/apply",async(req,res)=>{
-      const data=req.body;
-      const newApply={
+    app.get("/jobs/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobCollection.findOne(query);
+      res.send(result);
+    });
+    app.post("/api/apply", async (req, res) => {
+      const data = req.body;
+      const newApply = {
         ...data,
-        appliedAt:new Date()
-      }
-      const result=await applicationCollection.insertOne(newApply)
-      res.send(result)
-    })
-    app.get("/api/applications", async(req,res)=>{
-      const applicantId=req.query.applicantId;
-      const result=await applicationCollection.find({applicantId}).toArray()
-      res.send(result)
-    })
+        appliedAt: new Date(),
+      };
+      const result = await applicationCollection.insertOne(newApply);
+      res.send(result);
+    });
+    app.get("/api/applications", async (req, res) => {
+      const applicantId = req.query.applicantId;
+      const result = await applicationCollection
+        .find({ applicantId })
+        .toArray();
+      res.send(result);
+    });
 
     // plans
-    app.get("/api/plan",async(req,res)=>{
-      const query={}
-      if(req.query.planId){
-        query.planId=req.query.planId
+    app.get("/api/plan", async (req, res) => {
+      const query = {};
+      if (req.query.planId) {
+        query.planId = req.query.planId;
       }
-      const plan=await planCollection.findOne(query)
-      res.send(plan)
-    })
-    app.post('/new/subscription', async(req,res)=>{
-      const data=req.body;
+      const plan = await planCollection.findOne(query);
+      res.send(plan);
+    });
+    app.post("/new/subscription", async (req, res) => {
+      const data = req.body;
       // console.log(data)
-      const subscriptionData={
+      const subscriptionData = {
         ...data,
-        createdAt:new Date()
-      }
-      const result=await subscriptionColl.insertOne(subscriptionData);
+        createdAt: new Date(),
+      };
+      const result = await subscriptionColl.insertOne(subscriptionData);
 
-      const filter={
-        email:data.email
-      }
-      const updateUser=await user.updateOne(filter,{
-        $set:{plan:data.planId}
-      })
-      res.send(updateUser)
-    })
+      const filter = {
+        email: data.email,
+      };
+      const updateUser = await user.updateOne(filter, {
+        $set: { plan: data.planId },
+      });
+      res.send(updateUser);
+    });
     // company related api
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
@@ -115,8 +117,13 @@ async function run() {
       if (req.query.status) {
         query.status = req.query.status;
       }
-      const result = await jobCollection.find(query).toArray();
-      res.send(result);
+      if (query.companyId) {
+        const result = await jobCollection.find(query).toArray();
+        res.send(result);
+      }
+      else{
+        res.json(null)
+      }
     });
     app.post("/new/company", async (req, res) => {
       const data = req.body;
@@ -132,9 +139,8 @@ async function run() {
       if (req.query.recruiterId) {
         query.recruiterId = req.query.recruiterId;
       }
-      const result = await companyCollection.findOne(query);
-      // console.log(result);
-      res.send(result);
+      const company = await companyCollection.findOne(query);
+      res.json(company);
     });
     await client.db("admin").command({ ping: 1 });
     console.log(
