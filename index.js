@@ -35,11 +35,11 @@ async function run() {
       const result = await companyCollection.find().toArray();
       res.send(result);
     });
+
     // main page api
     app.get("/api/jobs", async (req, res) => {
       const { search, category, jobType, country } = req.query;
       let query = {};
-
       if (search) {
         query.title = { $regex: search, $options: "i" }; // Case-insensitive search
       }
@@ -54,7 +54,7 @@ async function run() {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await jobCollection.findOne(query);
-      res.send(result);
+      res.json(result);
     });
     app.post("/api/apply", async (req, res) => {
       const data = req.body;
@@ -63,14 +63,14 @@ async function run() {
         appliedAt: new Date(),
       };
       const result = await applicationCollection.insertOne(newApply);
-      res.send(result);
+      res.json(result);
     });
     app.get("/api/applications", async (req, res) => {
       const applicantId = req.query.applicantId;
       const result = await applicationCollection
         .find({ applicantId })
         .toArray();
-      res.send(result);
+      res.json(result);
     });
 
     // plans
@@ -80,11 +80,10 @@ async function run() {
         query.planId = req.query.planId;
       }
       const plan = await planCollection.findOne(query);
-      res.send(plan);
+      res.json(plan);
     });
     app.post("/new/subscription", async (req, res) => {
       const data = req.body;
-      // console.log(data)
       const subscriptionData = {
         ...data,
         createdAt: new Date(),
@@ -99,6 +98,7 @@ async function run() {
       });
       res.send(updateUser);
     });
+
     // company related api
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
@@ -120,9 +120,8 @@ async function run() {
       if (query.companyId) {
         const result = await jobCollection.find(query).toArray();
         res.send(result);
-      }
-      else{
-        res.json(null)
+      } else {
+        res.json(null);
       }
     });
     app.post("/new/company", async (req, res) => {
