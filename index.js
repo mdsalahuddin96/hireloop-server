@@ -97,9 +97,23 @@ async function run() {
 
     // company related api
     app.get("/api/companies", async (req, res) => {
-      const result = await companyCollection.find().toArray();
-      // console.log(result);
-      res.send(result);
+      const companies=await companyCollection.find().toArray();
+      for (let company of companies){
+        const filter={
+          companyId:company._id.toString()
+        }
+        const jobCount=await jobCollection.aggregate([
+          {
+          $match:{companyId:company._id.toString()}
+          },
+          {
+            $count:"JobCount"
+          }
+      ])
+        console.log(jobCount[0].jobCount)
+      }
+      
+      res.send(companies);
     });
     app.post("/new/company", async (req, res) => {
       const data = req.body;
