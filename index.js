@@ -31,10 +31,6 @@ async function run() {
       const result = await user.find().toArray();
       res.send(result);
     });
-    app.get("/companies", async (req, res) => {
-      const result = await companyCollection.find().toArray();
-      res.send(result);
-    });
 
     // main page api
     app.get("/api/jobs", async (req, res) => {
@@ -100,6 +96,42 @@ async function run() {
     });
 
     // company related api
+    app.get("/api/companies", async (req, res) => {
+      const result = await companyCollection.find().toArray();
+      // console.log(result);
+      res.send(result);
+    });
+    app.post("/new/company", async (req, res) => {
+      const data = req.body;
+      const newCompany = {
+        ...data,
+        createdAt: new Date(),
+      };
+      const result = await companyCollection.insertOne(newCompany);
+      res.send(result);
+    });
+
+    app.patch("/api/updateCompany/:id",async(req,res)=>{
+      const {id}=req.params
+      const data=await req.body;
+      const filter={
+        _id:new ObjectId(id)
+      }
+      const updateData={
+        $set:data
+      }
+      const result=await companyCollection.updateOne(filter,updateData)
+      res.json(result);
+    })
+
+    app.get("/api/my/companies", async (req, res) => {
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
+      }
+      const company = await companyCollection.findOne(query);
+      res.json(company);
+    });
     app.post("/new/jobs", async (req, res) => {
       const data = req.body;
       const newJob = {
@@ -124,23 +156,7 @@ async function run() {
         res.json(null);
       }
     });
-    app.post("/new/company", async (req, res) => {
-      const data = req.body;
-      const newCompany = {
-        ...data,
-        createdAt: new Date(),
-      };
-      const result = await companyCollection.insertOne(newCompany);
-      res.send(result);
-    });
-    app.get("/api/my/companies", async (req, res) => {
-      const query = {};
-      if (req.query.recruiterId) {
-        query.recruiterId = req.query.recruiterId;
-      }
-      const company = await companyCollection.findOne(query);
-      res.json(company);
-    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
