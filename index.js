@@ -97,24 +97,43 @@ async function run() {
 
     // company related api
     app.get("/api/companies", async (req, res) => {
-      const companies=await companyCollection.find().toArray();
-      for (let company of companies){
-        const filter={
-          companyId:company._id.toString()
-        }
-        const jobCount=await jobCollection.aggregate([
-          {
-          $match:{companyId:company._id.toString()}
+      const cursor = companyCollection.aggregate([
+        {
+          $lookup: {
+            from: "jobs",
+            let: {
+              cId: { $toString: "$_id" },
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$companyId", "$$cId"],
+                  },
+                },
+              },
+            ],
+            as: "jobs",
           },
-          {
-            $count:"JobCount"
-          }
-      ])
-        console.log(jobCount[0].jobCount)
-      }
-      
+        },
+        {
+          $addFields: {
+            jobCount: {
+              $size: "$jobs",
+            },
+          },
+        },
+        {
+          $project: {
+            jobs: 0,
+          },
+        },
+      ]);
+      const companies = await cursor.toArray();
       res.send(companies);
     });
+
+  
     app.post("/new/company", async (req, res) => {
       const data = req.body;
       const newCompany = {
@@ -125,18 +144,18 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/api/updateCompany/:id",async(req,res)=>{
-      const {id}=req.params
-      const data=await req.body;
-      const filter={
-        _id:new ObjectId(id)
-      }
-      const updateData={
-        $set:data
-      }
-      const result=await companyCollection.updateOne(filter,updateData)
+    app.patch("/api/updateCompany/:id", async (req, res) => {
+      const { id } = req.params;
+      const data = await req.body;
+      const filter = {
+        _id: new ObjectId(id),
+      };
+      const updateData = {
+        $set: data,
+      };
+      const result = await companyCollection.updateOne(filter, updateData);
       res.json(result);
-    })
+    });
 
     app.get("/api/my/companies", async (req, res) => {
       const query = {};
