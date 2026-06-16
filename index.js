@@ -6,6 +6,7 @@ dotenv.config();
 const port = 5000;
 app.use(cors());
 app.use(express.json());
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGO_URI;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -26,13 +27,49 @@ async function run() {
     const applicationCollection = db.collection("applications");
     const planCollection = db.collection("plans");
     const subscriptionColl = db.collection("subscription");
-    const user = db.collection("user");
+    const userCollection = db.collection("user");
+    const sessionCollection = db.collection("session");
+
+    // Token verification related
+    const verifyToken = async (req, res, next) => {
+      const authHeaders = req.headers?.authorization;
+      const token = authHeaders.split(" ")[1];
+      if (!authHeaders) {
+        res.status(401).send({ message: "Unauthorized access" });
+      }
+      if (!token) {
+        res.status(401).send({ message: "Unauthorized access" });
+      }
+      const session = await sessionCollection.findOne({
+        token: token,
+      });
+      const userId = session?.userId;
+      const user = await userCollection.findOne({ _id: userId });
+      req.user = user;
+      next();
+    };
+
+    // must be use after verifyToken
+    const verifyAdmin = async (req, res, next) => {
+      const user = req.user;
+      if (!user.role === "admin") {
+        return res.status(403).send({ message: "Forbidden user" });
+      }
+      next();
+    };
+
+    const verifySeeker = async (req, res, next) => {
+      const user = req.user;
+      if (!user.role === "seeker") {
+        return res.status(403).send({ message: "Forbidden user" });
+      }
+      next();
+    };
+    // main page api
     app.get("/recruiter", async (req, res) => {
-      const result = await user.find().toArray();
+      const result = await userCollection.find().toArray();
       res.send(result);
     });
-
-    // main page api
     app.get("/api/jobs", async (req, res) => {
       const { search, category, jobType, country } = req.query;
       let query = {};
@@ -61,8 +98,11 @@ async function run() {
       const result = await applicationCollection.insertOne(newApply);
       res.json(result);
     });
-    app.get("/api/applications", async (req, res) => {
+    app.get("/api/applications", verifyToken,verifySeeker, async (req, res) => {
       const applicantId = req.query.applicantId;
+      if(req.user._id.toString()!==applicantId){
+        return res.status(403).send({message:"Forbidden Access"})
+      }
       const result = await applicationCollection
         .find({ applicantId })
         .toArray();
@@ -89,14 +129,14 @@ async function run() {
       const filter = {
         email: data.email,
       };
-      const updateUser = await user.updateOne(filter, {
+      const updateUser = await userCollection.updateOne(filter, {
         $set: { plan: data.planId },
       });
       res.send(updateUser);
     });
 
     // company related api
-    app.get("/api/companies", async (req, res) => {
+    app.get("/api/companies", verifyToken, verifyAdmin, async (req, res) => {
       const cursor = companyCollection.aggregate([
         {
           $lookup: {
@@ -133,7 +173,6 @@ async function run() {
       res.send(companies);
     });
 
-  
     app.post("/new/company", async (req, res) => {
       const data = req.body;
       const newCompany = {
